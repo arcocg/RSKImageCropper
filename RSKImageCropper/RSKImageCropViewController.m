@@ -73,7 +73,10 @@ static const CGFloat kLayoutImageScrollViewAnimationDuration = 0.25;
 
 @end
 
-@implementation RSKImageCropViewController
+@implementation RSKImageCropViewController{
+    CGRect _initialFrame;
+    CGFloat _initialRotation;
+}
 
 #pragma mark - Lifecycle
 
@@ -122,6 +125,20 @@ static const CGFloat kLayoutImageScrollViewAnimationDuration = 0.25;
     self = [self initWithImage:originalImage];
     if (self) {
         _cropMode = cropMode;
+    }
+    return self;
+}
+
+- (instancetype)initWithImage:(UIImage *)originalImage
+                     cropMode:(RSKImageCropMode)cropMode
+                 initialFrame:(CGRect)initialFrame
+              initialRotation:(CGFloat)initialRotation
+{
+    self = [self initWithImage:originalImage];
+    if (self) {
+        _cropMode = cropMode;
+        _initialFrame = initialFrame;
+        _initialRotation = initialRotation;
     }
     return self;
 }
@@ -612,7 +629,10 @@ static const CGFloat kLayoutImageScrollViewAnimationDuration = 0.25;
         contentOffset.y = 0;
     }
     
-    self.imageScrollView.contentOffset = contentOffset;
+    if (0!=CGRectGetWidth(_initialFrame))
+        self.imageScrollView.contentOffset = CGPointMake(_initialFrame.origin.x,
+                                                         _initialFrame.origin.y);
+    else self.imageScrollView.contentOffset = contentOffset;
 }
 
 - (void)resetFrame
@@ -622,18 +642,26 @@ static const CGFloat kLayoutImageScrollViewAnimationDuration = 0.25;
 
 - (void)resetRotation
 {
-    [self setRotationAngle:0.0];
+    [self setRotationAngle:_initialRotation];
 }
 
 - (void)resetZoomScale
 {
-    CGFloat zoomScale;
-    if (CGRectGetWidth(self.view.bounds) > CGRectGetHeight(self.view.bounds)) {
-        zoomScale = CGRectGetHeight(self.view.bounds) / self.originalImage.size.height;
-    } else {
-        zoomScale = CGRectGetWidth(self.view.bounds) / self.originalImage.size.width;
+    if ((0!=CGRectGetWidth(_initialFrame)))
+    {
+        
+        self.imageScrollView.zoomScale =
+        CGRectGetWidth(_initialFrame)/ self.originalImage.size.width;;
     }
-    self.imageScrollView.zoomScale = zoomScale;
+    else {
+        CGFloat zoomScale;
+        if (CGRectGetWidth(self.view.bounds) > CGRectGetHeight(self.view.bounds)) {
+            zoomScale = CGRectGetHeight(self.view.bounds) / self.originalImage.size.height;
+        } else {
+            zoomScale = CGRectGetWidth(self.view.bounds) / self.originalImage.size.width;
+        }
+        self.imageScrollView.zoomScale = zoomScale;
+    }
 }
 
 - (NSArray *)intersectionPointsOfLineSegment:(RSKLineSegment)lineSegment withRect:(CGRect)rect

@@ -55,6 +55,16 @@ typedef NS_ENUM(NSUInteger, RSKImageCropMode) {
  */
 - (instancetype)initWithImage:(UIImage *)originalImage cropMode:(RSKImageCropMode)cropMode;
 
+/**
+ Initializes and returns a newly allocated view controller object with the specified image and the specified crop mode and initial params for displaying as in previous cropped image
+ 
+ @param originalImage The image for cropping.
+ @param cropMode The mode for cropping.
+ @param initialFrame Initial position of cropping frame
+ @param initialAngle Initial angle
+ */
+- (instancetype)initWithImage:(UIImage *)originalImage cropMode:(RSKImageCropMode)cropMode initialFrame:(CGRect)initialFrame initialRotation:(CGFloat)initialRotation;
+
 ///-----------------------------
 /// @name Accessing the Delegate
 ///-----------------------------
