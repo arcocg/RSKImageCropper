@@ -959,7 +959,14 @@ static const CGFloat kLayoutImageScrollViewAnimationDuration = 0.25;
     
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         
-        UIImage *croppedImage = [self croppedImage:originalImage cropMode:cropMode cropRect:cropRect rotationAngle:rotationAngle zoomScale:zoomScale maskPath:maskPath applyMaskToCroppedImage:applyMaskToCroppedImage];
+        UIImage *croppedImage;
+        
+        //Due to issue with custom mode & rotation image rendering https://github.com/ruslanskorb/RSKImageCropper/issues/107 instead of true renderig uses fastfix: view drawing
+        if (cropMode == RSKImageCropModeCustom && rotationAngle!=0)
+            croppedImage = [self renderedView];
+        //In other cases uses true rendering
+        else
+            croppedImage = [self croppedImage:originalImage cropMode:cropMode cropRect:cropRect rotationAngle:rotationAngle zoomScale:zoomScale maskPath:maskPath applyMaskToCroppedImage:applyMaskToCroppedImage];
         
         dispatch_async(dispatch_get_main_queue(), ^{
             if ([self.delegate respondsToSelector:@selector(imageCropViewController:didCropImage:usingCropRect:rotationAngle:)]) {
@@ -976,6 +983,37 @@ static const CGFloat kLayoutImageScrollViewAnimationDuration = 0.25;
     if ([self.delegate respondsToSelector:@selector(imageCropViewControllerDidCancelCrop:)]) {
         [self.delegate imageCropViewControllerDidCancelCrop:self];
     }
+}
+
+-(UIImage*)renderedView
+{
+    self.view.backgroundColor = [UIColor whiteColor];
+    self.moveAndScaleLabel.hidden = YES;
+    self.cancelButton.hidden = YES;
+    self.chooseButton.hidden = YES;
+    UIImage *theImage = [self drawView:self.view area:CGRectInset(self.maskRect, 2, 2) scale:MAX(1, 1/self.zoomScale)];
+    self.view.backgroundColor = [UIColor blackColor];
+    self.moveAndScaleLabel.hidden = NO;
+    self.cancelButton.hidden = NO;
+    self.chooseButton.hidden = NO;
+    return theImage;
+}
+
+- (UIImage *) drawView:(UIView *)view area:(CGRect)area scale:(CGFloat)scale
+{
+    UIGraphicsBeginImageContextWithOptions(area.size, view.opaque, scale);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    
+    CGContextTranslateCTM(context, -area.origin.x, -area.origin.y);
+    CGContextSetFillColorWithColor(context, [[UIColor whiteColor] CGColor]);
+    CGContextFillRect(context, CGRectMake(0, 0, area.size.width, area.size.height));
+    
+    [view.layer renderInContext:context];
+    
+    UIImage * img = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return img;
 }
 
 #pragma mark - UIGestureRecognizerDelegate
